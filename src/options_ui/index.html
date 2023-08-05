@@ -1,0 +1,20 @@
+<html>
+<head>
+    <meta charset="UTF-8">
+    <script src="./index.js" defer="defer"type="module"></script>
+</head>
+<body>
+    <form id="form">
+        <fieldset>
+            <legend>使っているサーバの種類を選択してください</legend>
+            <label for="mastodon">mastodon</label>
+            <input type="radio" name="server_type" id="server_type" value="mastodon" />
+            <label for="misskey">misskey</label>
+            <input type="radio" name="server_type" id="server_type" value="misskey" checked="checked"/>
+        </fieldset>
+        <label for="server_url">サーバのURLを入力してください</label>
+        <input type="url" name="server_url" id="server_url" />
+        <button type="submit">保存</button>
+    </form>
+</body>
+</html>
