@@ -14,9 +14,9 @@
     "web_accessible_resources": [
         "provider.js"
     ],
-    "content_script": [
+    "content_scripts": [
         {
-            "matched": "<all_urls>",
+            "matches": ["<all_urls>"],
             "js": ["content_script/insert_provider.js"]
         }
     ],
