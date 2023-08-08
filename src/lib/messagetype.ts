@@ -1,7 +1,6 @@
-export type MessageType = "getShareLink";
+export type MessageType = "getShareLink" | "getServerList";
 export const EXT = "suruttofedishare";
 
-type getShareLinkBody = URL;
 type getShareLinkRequestBody = {
     text: string,
     url: string | undefined,
@@ -10,8 +9,17 @@ type getShareLinkRequestBody = {
 export type MessageResponsePayload = {
     id: string,
     ext: string,
-    status: "ok" | "error",
-    body: getShareLinkBody | string,
+    response: MessageSuccessResponseBody | MessageErrorResponseBody,
+}
+
+export type MessageSuccessResponseBody = {
+    status: "error"
+    error: string,
+}
+
+export type MessageErrorResponseBody = {
+    status: "ok",
+    body: string,
 }
 
 export type MessageRequestPayload = {
@@ -21,9 +29,11 @@ export type MessageRequestPayload = {
     params: getShareLinkRequestBody,
 }
 
+export type ServerInfo = { type: string, url: URL }
+
 export type Msg = Record<string, MsgValue>;
 
 type MsgValue = {
-    resolve: (value: Object | PromiseLike<Object | undefined> | undefined) => void,
-    reject: (reason?: any) => void
+    resolve: (value: any | PromiseLike<any>) => void;
+    reject: (reason?: any) => any;
 }

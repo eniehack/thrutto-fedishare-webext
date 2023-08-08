@@ -1,5 +1,9 @@
 import browser from "webextension-polyfill";
 import { EXT, MessageRequestPayload, MessageResponsePayload } from "../lib/messagetype";
+import { getServerList } from "../lib/storage";
+import { Mastodon } from "../lib/mastodon";
+import { Misskey } from "../lib/misskey";
+import { Server } from "../lib/server";
 
 let script = document.createElement("script");
 script.setAttribute("async", "false");
@@ -12,42 +16,38 @@ window.addEventListener("message", async (msg: MessageEvent<MessageRequestPayloa
     if (!msg.data) return;
     if (msg.data.ext !== EXT) return;
 
+    let serverConfig = await getServerList();
     switch (msg.data.method) {
         case "getShareLink":
-            let resp: MessageResponsePayload;
-            let serverConfig = await browser.storage.sync.get("server");
+            let resp: MessageResponsePayload;        
             if (Object.assign(serverConfig).length === 0)
             {
-                resp = { id: msg.data.id, ext: EXT, status: "error", body: "storage uninitialized" };
+                resp = { id: msg.data.id, ext: EXT, response: {error: "storage uninitialized", status: "error"} };
                 window.postMessage(
                     resp,
                     msg.origin
                 );
                 return;
             }
-            let share_url = new URL(serverConfig.server.url);
-            switch (serverConfig.server.type)
+            let server: Server;
+            switch (serverConfig.type)
             {
                 case "misskey":
-                    share_url.searchParams.set("text", msg.data.params.text);
-                    if (typeof msg.data.params.url !== "undefined") {
-                        share_url.searchParams.set("url", msg.data.params.url);
-                    }
+                    server = new Misskey(serverConfig.url, msg.data.params.text, msg.data.params.url);
                     break;
                 case "mastodon":
-                    share_url.searchParams.set("text", msg.data.params.text);
-                    if (typeof msg.data.params.url !== "undefined") {
-                        share_url.searchParams.set("url", msg.data.params.url);
-                    }
+                    server = new Mastodon(serverConfig.url, msg.data.params.text, msg.data.params.url);
                     break;
                 default:
-                    break;
+                    return;
             }
             resp = { 
                 id: msg.data.id,
                 ext: EXT,
-                status: "ok",
-                body: share_url,
+                response: {
+                    status: "ok",
+                    body: server.getShareLink().toString(),
+                },
             }
             window.postMessage(
                 resp,
@@ -55,16 +55,13 @@ window.addEventListener("message", async (msg: MessageEvent<MessageRequestPayloa
             );
             break;
         default:
-            resp = { id: msg.data.id, ext: EXT, status: "error", body: "unknown method name called" };
+            resp = { id: msg.data.id, ext: EXT, response: {error: "unknown method name called", status: "error" }};
             window.postMessage(
                 resp,
                 msg.origin
             );
             break;
     }
-
-    
-    
 })
 
 console.log("done");

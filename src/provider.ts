@@ -1,31 +1,34 @@
-import { Msg, EXT, MessageResponsePayload } from "./lib/messagetype";
+import { EXT, MessageResponsePayload, Msg } from "./lib/messagetype";
 
-type fediverseShareV1 = {
-    _msg: Msg
+type fediverse = {
+    _msg: Msg,
     meta: {
-        apiVersion: "v1"
+        apiVersion: "eniehack/v0.1.0"
     },
-    getServerInfo(text: string, url?: string): Promise<Object | undefined>;
+    getShareLink(text: string, url?: string): Promise<string>;
+    __call<T>(method: string, params: Object): Promise<T>;
 }
 
 declare global {
     interface Window {
-        fediverseShareV1: fediverseShareV1
+        fediverse: fediverse
     }
 }
 
-window.fediverseShareV1 = {
+window.fediverse = {
     _msg: {},
     meta: {
-        apiVersion: "v1"
+        apiVersion: "eniehack/v0.1.0"
     },
-    async getServerInfo(text: string, url?: string): Promise<Object | undefined>
-    {
+    async getShareLink(text: string, url?: string): Promise<string> {
+        return window.fediverse.__call("getShareLink", {text, url});
+    },
+    async __call<T>(method: string, params: Object): Promise<T> {
         return new Promise((resolve, reject) => {
             let id = Math.random().toString().slice(4);
-            this._msg[id] = { resolve, reject };
+            window.fediverse._msg[id] = { resolve, reject };
             window.postMessage(
-                {id, ext: EXT, method: "getShareLink", params: {text, url}},
+                {id, ext: EXT, method, params },
                 "*"
             )
         })
@@ -36,18 +39,16 @@ window.addEventListener("message", (msg: MessageEvent<MessageResponsePayload>) =
     if (
         !msg.data ||
         msg.data.ext !== EXT ||
-        !window.fediverseShareV1._msg[msg.data.id]
+        !msg.data.response ||
+        !window.fediverse._msg[msg.data.id]
     )
         return;
 
-    if (typeof msg.data.body === "string")
-    {
-        window.fediverseShareV1._msg[msg.data.id].reject(msg.data.body);
-    }
-    else
-    {
-        window.fediverseShareV1._msg[msg.data.id].resolve(msg.data.body);
+    if (msg.data.response.status === "error") {
+        window.fediverse._msg[msg.data.id].reject(msg.data.response.error);
+    } else {
+        window.fediverse._msg[msg.data.id].resolve(msg.data.response.body);
     }
 
-    delete window.fediverseShareV1._msg[msg.data.id]
+    delete window.fediverse._msg[msg.data.id]
 })
